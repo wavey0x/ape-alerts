@@ -1,0 +1,149 @@
+Metadata-Version: 2.1
+Name: ape-tokens
+Version: 0.5.0
+Summary: ape-tokens: tokenlists plugin for Ape
+Home-page: https://github.com/ApeWorX/ape-tokens
+Author: ApeWorX Ltd.
+Author-email: admin@apeworx.io
+License: Apache-2.0
+Keywords: ethereum
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Natural Language :: English
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.8,<4
+Description-Content-Type: text/markdown
+Requires-Dist: eth-ape (<0.6,>=0.5.0)
+Requires-Dist: tokenlists (>=0.1.1)
+Provides-Extra: dev
+Requires-Dist: pytest (>=6.0) ; extra == 'dev'
+Requires-Dist: pytest-xdist ; extra == 'dev'
+Requires-Dist: pytest-cov ; extra == 'dev'
+Requires-Dist: hypothesis (<7.0,>=6.2.0) ; extra == 'dev'
+Requires-Dist: black (<23.0,>=22.6.0) ; extra == 'dev'
+Requires-Dist: mypy (<1.0,>=0.971) ; extra == 'dev'
+Requires-Dist: flake8 (<5.0,>=4.0.1) ; extra == 'dev'
+Requires-Dist: isort (<6.0,>=5.10.1) ; extra == 'dev'
+Requires-Dist: Sphinx (<4,>=3.4.3) ; extra == 'dev'
+Requires-Dist: sphinx-rtd-theme (<1,>=0.1.9) ; extra == 'dev'
+Requires-Dist: towncrier (<20,>=19.2.0) ; extra == 'dev'
+Requires-Dist: setuptools ; extra == 'dev'
+Requires-Dist: setuptools-scm ; extra == 'dev'
+Requires-Dist: wheel ; extra == 'dev'
+Requires-Dist: twine ; extra == 'dev'
+Requires-Dist: commitizen ; extra == 'dev'
+Requires-Dist: pre-commit ; extra == 'dev'
+Requires-Dist: pytest-watch ; extra == 'dev'
+Requires-Dist: IPython ; extra == 'dev'
+Requires-Dist: ipdb ; extra == 'dev'
+Provides-Extra: doc
+Requires-Dist: Sphinx (<4,>=3.4.3) ; extra == 'doc'
+Requires-Dist: sphinx-rtd-theme (<1,>=0.1.9) ; extra == 'doc'
+Requires-Dist: towncrier (<20,>=19.2.0) ; extra == 'doc'
+Provides-Extra: lint
+Requires-Dist: black (<23.0,>=22.6.0) ; extra == 'lint'
+Requires-Dist: mypy (<1.0,>=0.971) ; extra == 'lint'
+Requires-Dist: flake8 (<5.0,>=4.0.1) ; extra == 'lint'
+Requires-Dist: isort (<6.0,>=5.10.1) ; extra == 'lint'
+Provides-Extra: release
+Requires-Dist: setuptools ; extra == 'release'
+Requires-Dist: setuptools-scm ; extra == 'release'
+Requires-Dist: wheel ; extra == 'release'
+Requires-Dist: twine ; extra == 'release'
+Provides-Extra: test
+Requires-Dist: pytest (>=6.0) ; extra == 'test'
+Requires-Dist: pytest-xdist ; extra == 'test'
+Requires-Dist: pytest-cov ; extra == 'test'
+Requires-Dist: hypothesis (<7.0,>=6.2.0) ; extra == 'test'
+
+# Quick Start
+
+A series of utilities for working with tokens, based on the [`py-tokenlists`](https://github.com/ApeWorX/py-tokenlists).
+
+## Dependencies
+
+* [python3](https://www.python.org/downloads) version 3.8 or greater, python3-dev
+
+## Installation
+
+### via `pip`
+
+You can install the latest release via [`pip`](https://pypi.org/project/pip/):
+
+```bash
+pip install ape-tokens
+```
+
+### via `setuptools`
+
+You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
+
+```bash
+git clone https://github.com/ApeWorX/ape-tokens.git
+cd ape-tokens
+python3 setup.py install
+```
+
+## Quick Usage
+
+### CLI Usage
+
+First, install a token list, such as the `1inch` token list, which contains many tokens that you can use:
+
+```bash
+ape tokens install tokens.1inch.eth
+```
+
+To see all the tokens you can use, run command:
+
+```bash
+ape tokens list-tokens
+```
+
+To see other available CLI commands, run:
+
+```bash
+ape tokens --help
+```
+
+### Python Usage
+
+One of the main reasons to use the `ape-tokens` plugin is to have nicer UX for providing token amounts to contract transactions.
+For example, let's say you have a smart-contract named `MyContract` with a function `provideLinkToken()` that takes a decimal value of `LINK` tokens.
+The following is an example script that deploys the contract and makes a transaction by expressing the value of LINK as `8.23 LINK`:
+
+```python
+from ape import accounts, project
+
+my_account = accounts[0]
+contract = my_account.deploy(project.MyContract)
+
+contract.provideLinkTokens("8.23 LINK")
+```
+
+Alternatively, if you need the converted value returned to you, you can use the `convert` tool from the root `ape` namespace:
+
+```python
+from ape import convert
+
+convert("100.1234 BAT", int)
+```
+
+Lastly, to get information about a token, including its contract address, you can do so by importing the `tokens` member from the root `ape_tokens` namespace:
+
+```python
+from ape_tokens import tokens
+
+bat = tokens["BAT"]
+
+print(bat.address)
+```
+
+

@@ -1,0 +1,5 @@
+name: ape-alerts
+geth:
+  ethereum:
+    mainnet:
+      uri: https://eth-mainnet.alchemyapi.io/v2/eOIZDzCWpqSiMYb4JTnxkg0VNR1sgu_N

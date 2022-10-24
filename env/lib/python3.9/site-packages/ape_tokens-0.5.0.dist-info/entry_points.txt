@@ -1,0 +1,3 @@
+[ape_cli_subcommands]
+ape_tokens = ape_tokens._cli:cli
+

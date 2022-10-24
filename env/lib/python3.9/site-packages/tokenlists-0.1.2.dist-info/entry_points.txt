@@ -1,0 +1,3 @@
+[console_scripts]
+tokenlists = tokenlists._cli:cli
+
