@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from functools import cached_property
 from typing import List, Optional, Union
-from ape import Contract, chain, project
+from ape import Contract, chain, project, networks
 from ape.api import ReceiptAPI
 from ape.types import AddressType, ContractLog
 from ape.utils import ManagerAccessMixin
@@ -18,6 +18,7 @@ load_dotenv(find_dotenv())
 telegram_bot_key = os.environ.get('WAVEY_ALERTS_BOT_KEY')
 alerts_enabled = True if os.environ.get('ENVIRONMENT') == "PROD" else False
 bot = telebot.TeleBot(telegram_bot_key)
+oracle = project.ORACLE.at('0x83d95e0D5f402511dB06817Aff3f9eA88224B030')
 
 CHAT_IDS = {
     "WAVEY_ALERTS": "-789090497",
@@ -131,6 +132,10 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
     cow_explorer_url = f'https://explorer.cow.fi/orders/{trade_data[0]["order_uid"]}'
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
     
+    txn_receipt = networks.provider.get_receipt(txn_hash)
+    eth_used = txn_receipt.gas_price * txn_receipt.gas_used
+    gas_cost = oracle.getNormalizedValueUsdc('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', eth_used) / 10**6
+
     ts = chain.blocks[block].timestamp
     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d %H:%M")
     msg = f'{"🧜‍♂️" if solver == prod_solver else "🐓"} *New solve detected!*\n'
@@ -142,7 +147,8 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
         msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
-    msg += f'\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
+    msg += f'\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})\n'
+    msg += f'💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
     else:
