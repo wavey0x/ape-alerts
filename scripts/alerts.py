@@ -133,15 +133,15 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
     
     ts = chain.blocks[block].timestamp
     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d %H:%M")
-    msg = f'{"🧜‍♂️" if solver == prod_solver else "🐬"} *New solve detected!*\n'
-    msg += f'by [{solver[0:7]}...]({etherscan_base_url}address/{solver})   {dt}\n\n'
-    msg += f'📕 *Trades*:\n'
+    msg = f'{"🧜‍♂️" if solver == prod_solver else "🐓"} *New solve detected!*\n'
+    msg += f'by [{solver[0:7]}...]({etherscan_base_url}address/{solver})  @ {dt}\n\n'
+    msg += f'📕 *Trade(s)*:\n'
     for t in trade_data:
         user = t["owner"]
-        msg += f'    User: [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
+        # msg += f'    User: \n'
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
-        msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,}\n\n'
+        msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
     msg += f'\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
