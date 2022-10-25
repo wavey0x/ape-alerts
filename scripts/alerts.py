@@ -147,8 +147,9 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
         msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
-    msg += f'\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})\n'
-    msg += f'💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
+    msg += f'\n💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
+    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
+    
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
     else:
