@@ -171,7 +171,7 @@ def find_reverts(address_list, start_block, end_block):
                 failed = txn_receipt.failed
                 if not failed:
                     continue
-                msg = f'*🤬🤬🤬  Faild Transaction detected!*\n\n'
+                msg = f'*🤬  Faild Transaction detected!*\n\n'
                 f= t.dict()['from']
                 e = "🧜‍♂️" if f == address_list[0] else "🐓"
                 abbr, link, markdown = abbreviate_address(f)
