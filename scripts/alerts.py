@@ -1,4 +1,4 @@
-import json, telebot, os
+import json, telebot, os, time
 from dotenv import load_dotenv, find_dotenv
 from dataclasses import dataclass
 from decimal import Decimal
@@ -17,8 +17,12 @@ from datetime import datetime, timezone
 load_dotenv(find_dotenv())
 telegram_bot_key = os.environ.get('WAVEY_ALERTS_BOT_KEY')
 alerts_enabled = True if os.environ.get('ENVIRONMENT') == "PROD" else False
+etherscan_base_url = f'https://etherscan.io/'
 bot = telebot.TeleBot(telegram_bot_key)
 oracle = project.ORACLE.at('0x83d95e0D5f402511dB06817Aff3f9eA88224B030')
+barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
+prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
+address_list = [prod_solver, barn_solver]
 
 CHAT_IDS = {
     "WAVEY_ALERTS": "-789090497",
@@ -39,7 +43,7 @@ def main():
 
     alert_ycrv(last_block, current_block)
     alert_seasolver(last_block, current_block)
-    
+    find_reverts(address_list, last_block-1, current_block)
 
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
@@ -128,13 +132,9 @@ def enumerate_trades(block, txn_hash):
 
 def format_solver_alert(solver, txn_hash, block, trade_data):
     prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
-    etherscan_base_url = f'https://etherscan.io/'
     cow_explorer_url = f'https://explorer.cow.fi/orders/{trade_data[0]["order_uid"]}'
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
-    
     txn_receipt = networks.provider.get_receipt(txn_hash)
-    eth_used = txn_receipt.gas_price * txn_receipt.gas_used
-    gas_cost = oracle.getNormalizedValueUsdc('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', eth_used) / 10**6
 
     ts = chain.blocks[block].timestamp
     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d %H:%M")
@@ -143,11 +143,10 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
     msg += f'📕 *Trade(s)*:\n'
     for t in trade_data:
         user = t["owner"]
-        # msg += f'    User: \n'
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
         msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
-    msg += f'\n💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
+    msg += f'\n{calc_gas_cost(txn_receipt)}'
     msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
     
     if alerts_enabled:
@@ -161,3 +160,31 @@ def abbreviate_address(address):
     link = f'https://etherscan.io/address/{address}'
     markdown = f'[{abbr}...]({link})'
     return abbr, link, markdown
+
+def find_reverts(address_list, start_block, end_block):
+    for b in range(start_block, end_block):
+        block = chain.blocks[b]
+        for t in block.transactions:
+            if t.dict()['from'] in address_list:
+                txn_hash = t.txn_hash.hex()
+                txn_receipt = networks.provider.get_receipt(txn_hash)
+                failed = txn_receipt.failed
+                if not failed:
+                    continue
+                msg = f'*🤬🤬🤬  Faild Transaction detected!*\n\n'
+                f= t.dict()['from']
+                e = "🧜‍♂️" if f == address_list[0] else "🐓"
+                abbr, link, markdown = abbreviate_address(f)
+                msg += f'Sent from {markdown} {e}\n\n'
+                msg += f'{calc_gas_cost(txn_receipt)}'
+                msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Tenderly](https://dashboard.tenderly.co/tx/mainnet/{txn_hash})'
+                if alerts_enabled:
+                    chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
+                else:
+                    chat_id = CHAT_IDS["WAVEY_ALERTS"]
+                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
+def calc_gas_cost(txn_receipt):
+    eth_used = txn_receipt.gas_price * txn_receipt.gas_used
+    gas_cost = oracle.getNormalizedValueUsdc('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', eth_used) / 10**6
+    return f'💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
