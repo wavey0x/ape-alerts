@@ -30,6 +30,10 @@ CHAT_IDS = {
     "GNOSIS_CHAIN_POC": "-1001516144118"
 }
 
+SKIP_LIST = [
+    '0xB4b9DC1C77bdbb135eA907fd5a08094d98883A35'
+]
+
 def main():
     # last_block
     with open("local_data.json", "r") as jsonFile:
@@ -108,20 +112,43 @@ def enumerate_trades(block, txn_hash):
     settlement = Contract('0x9008d19f58aabd9ed0d60971565aa8510560ab41')
     logs = list(settlement.Trade.range(block-1, block+1))
     trades = []
-    
     for l in logs:
         if l.transaction_hash != txn_hash:
             continue
         args = l.dict()['event_arguments']
         eth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+        try:
+            sell_token = args['sellToken']
+            if sell_token == eth:
+                sell_token_symbol = 'ETH'
+                sell_token_decimals = 18
+            else:
+                sell_token_symbol = project.ERC20.at(sell_token).symbol()
+                sell_token_decimals = project.ERC20.at(sell_token).decimals()
+        except:
+            sell_token_symbol = '? Cannot Find ?'
+            sell_token_decimals = 18
+
+        try:
+            buy_token = args['buyToken']
+            if buy_token == eth:
+                buy_token_symbol = 'ETH'
+                buy_token_decimals = 18
+            else:
+                buy_token_symbol = project.ERC20.at(buy_token).symbol()
+                buy_token_decimals = project.ERC20.at(buy_token).decimals()
+        except:
+            buy_token_symbol = '? Cannot Find ?'
+            buy_token_decimals = 18
+
         trade = {
             'owner': args['owner'],
             'sell_token_address': args['sellToken'],
-            'sell_token_symbol': 'ETH' if args['sellToken'] == eth else project.ERC20.at(args['sellToken']).symbol(),
-            'sell_token_decimals': 18 if args['sellToken'] == eth else project.ERC20.at(args['sellToken']).decimals(),
+            'sell_token_symbol': sell_token_symbol,
+            'sell_token_decimals': sell_token_decimals,
             'buy_token_address': args['buyToken'],
-            'buy_token_symbol': 'ETH' if args['buyToken'] == eth else project.ERC20.at(args['buyToken']).symbol(),
-            'buy_token_decimals': 18 if args['buyToken'] == eth else project.ERC20.at(args['buyToken']).decimals(),
+            'buy_token_symbol': buy_token_symbol,
+            'buy_token_decimals': buy_token_decimals,
             'sell_amount': args['sellAmount'],
             'buy_amount': args['buyAmount'],
             'fee_amount': args['feeAmount'],
