@@ -27,7 +27,8 @@ address_list = [prod_solver, barn_solver]
 CHAT_IDS = {
     "WAVEY_ALERTS": "-789090497",
     "CURVE_WARS": "-1001712241544",
-    "GNOSIS_CHAIN_POC": "-1001516144118"
+    "GNOSIS_CHAIN_POC": "-1001516144118",
+    "YBRIBE": "-1001862925311",
 }
 
 SKIP_LIST = [
@@ -45,6 +46,7 @@ def main():
     current_block = chain.blocks.height
     data['last_block'] = current_block
 
+    alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
     alert_seasolver(last_block, current_block)
     find_reverts(address_list, last_block-1, current_block)
@@ -53,6 +55,38 @@ def main():
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
     
+
+def alert_bribes(last_block, current_block):
+    deploy_block = 15_878_262
+    start = max(last_block, deploy_block)
+    ybribe = Contract('0x03dFdBcD4056E2F92251c7B07423E1a33a7D3F6d')
+    logs = list(ybribe.RewardAdded.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        txn_hash = l.transaction_hash
+        briber = args['briber']
+        gauge = args['gauge']
+        token = Contract(args['reward_token'])
+        amount = args['amount']
+        fee = args['fee']
+        gauge_name = ''
+        abbr, link, markdown = abbreviate_address(briber)
+        try:
+            gauge_name = Contract(gauge).name()
+        except:
+            pass
+        amt = round(amount/10**token.decimals(),2)
+        fee = round(fee/10**token.decimals(),2)
+        msg = f'🤑 *New Bribe Add Detected!*'
+        msg += f'\n\nAmount: {amt:,} {token.symbol()}'
+        msg += f'\nFee: {fee:,} {token.symbol()}'
+        msg += f'\n\n🔗 [Etherscan](https://etherscan.io/tx/{txn_hash})'
+        print(msg)
+        chat_id = CHAT_IDS["WAVEY_ALERTS"]
+        if alerts_enabled:
+            chat_id = CHAT_IDS["YBRIBE"]
+        bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
 def alert_ycrv(last_block, current_block):
     # Config
     deploy_block = 15_624_808
