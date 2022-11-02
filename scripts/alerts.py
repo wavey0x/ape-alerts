@@ -107,7 +107,7 @@ def alert_bribes(last_block, current_block):
         except:
             pass
         amt = round(amount/10**18,2)
-        msg = f'🤑 *New Bribe Add Detected!*'
+        msg = f'💰 *Bribe Claim Detected!*'
         msg += f'\n\n*Amount*: {amt:,}'# {token.symbol()}'
         msg += f'\n*Gauge*: {gauge_name} {markdown}'
         msg += f'\n*User*: {user}'
