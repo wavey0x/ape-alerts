@@ -2,3 +2,4 @@ local_data.json
 .env
 env
 .build
+scripts/__pycache__
