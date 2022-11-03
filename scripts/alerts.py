@@ -84,7 +84,6 @@ def alert_bribes(last_block, current_block):
         msg += f'\n*Briber*: {briber}'
         msg += f'\n*Fee*: {fee:,} {token.symbol()}'
         msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-        print(msg)
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
         if alerts_enabled:
             chat_id = CHAT_IDS["YBRIBE"]
@@ -113,6 +112,10 @@ def alert_bribes(last_block, current_block):
         msg += f'\n*User*: {user}'
         msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
         print(msg)
+        chat_id = CHAT_IDS["WAVEY_ALERTS"]
+        if alerts_enabled:
+            chat_id = CHAT_IDS["YBRIBE"]
+        bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_ycrv(last_block, current_block):
     # Config
