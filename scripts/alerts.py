@@ -89,34 +89,34 @@ def alert_bribes(last_block, current_block):
             chat_id = CHAT_IDS["YBRIBE"]
         bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
-    logs = list(ybribe.RewardClaimed.range(start, current_block))
-    for l in logs:
-        args = l.dict()['event_arguments']
-        txn_hash = l.transaction_hash
-        user = args['user']
-        gauge = args['gauge']
-        # token = Contract(args['reward_token'])
-        amount = args['amount']
+    # logs = list(ybribe.RewardClaimed.range(start, current_block))
+    # for l in logs:
+    #     args = l.dict()['event_arguments']
+    #     txn_hash = l.transaction_hash
+    #     user = args['user']
+    #     gauge = args['gauge']
+    #     # token = Contract(args['reward_token'])
+    #     amount = args['amount']
 
-        gauge_name = ''
-        abbr, link, markdown = abbreviate_address(user)
-        user = markdown
-        abbr, link, markdown = abbreviate_address(gauge)
-        gauge = markdown
-        try:
-            gauge_name = Contract(gauge).name()
-        except:
-            pass
-        amt = round(amount/10**18,2)
-        msg = f'💰 *Bribe Claim Detected!*'
-        msg += f'\n\n*Amount*: {amt:,}'# {token.symbol()}'
-        msg += f'\n*Gauge*: {gauge_name} {gauge}'
-        msg += f'\n*User*: {user}'
-        msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-        chat_id = CHAT_IDS["WAVEY_ALERTS"]
-        if alerts_enabled:
-            chat_id = CHAT_IDS["YBRIBE"]
-        bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+    #     gauge_name = ''
+    #     abbr, link, markdown = abbreviate_address(user)
+    #     user = markdown
+    #     abbr, link, markdown = abbreviate_address(gauge)
+    #     gauge = markdown
+    #     try:
+    #         gauge_name = Contract(gauge).name()
+    #     except:
+    #         pass
+    #     amt = round(amount/10**18,2)
+    #     msg = f'💰 *Bribe Claim Detected!*'
+    #     msg += f'\n\n*Amount*: {amt:,}'# {token.symbol()}'
+    #     msg += f'\n*Gauge*: {gauge_name} {gauge}'
+    #     msg += f'\n*User*: {user}'
+    #     msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+    #     chat_id = CHAT_IDS["WAVEY_ALERTS"]
+    #     if alerts_enabled:
+    #         chat_id = CHAT_IDS["YBRIBE"]
+    #     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_ycrv(last_block, current_block):
     # Config
