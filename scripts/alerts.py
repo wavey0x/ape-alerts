@@ -101,6 +101,8 @@ def alert_bribes(last_block, current_block):
         gauge_name = ''
         abbr, link, markdown = abbreviate_address(user)
         user = markdown
+        abbr, link, markdown = abbreviate_address(gauge)
+        gauge = markdown
         try:
             gauge_name = Contract(gauge).name()
         except:
@@ -108,10 +110,9 @@ def alert_bribes(last_block, current_block):
         amt = round(amount/10**18,2)
         msg = f'💰 *Bribe Claim Detected!*'
         msg += f'\n\n*Amount*: {amt:,}'# {token.symbol()}'
-        msg += f'\n*Gauge*: {gauge_name} {markdown}'
+        msg += f'\n*Gauge*: {gauge_name} {gauge}'
         msg += f'\n*User*: {user}'
         msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-        print(msg)
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
         if alerts_enabled:
             chat_id = CHAT_IDS["YBRIBE"]
