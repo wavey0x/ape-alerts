@@ -159,10 +159,8 @@ def alert_seasolver(last_block, current_block):
     
     # Config
     deploy_block = 15_624_808
-    alert_size_threshold = 150_000e18
     start = max(last_block, deploy_block)
 
-    ycrv = Contract('0xFCc5c47bE19d06BF83eB04298b026F81069ff65b')
     prod_logs = list(settlement.Settlement.range(start, current_block, search_topics={'solver': prod_solver}))
     barn_logs = list(settlement.Settlement.range(start, current_block, search_topics={'solver': barn_solver}))
     logs = prod_logs + barn_logs
