@@ -22,6 +22,7 @@ bot = telebot.TeleBot(telegram_bot_key)
 oracle = project.ORACLE.at('0x83d95e0D5f402511dB06817Aff3f9eA88224B030')
 barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
 prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
+trade_handler = '0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b'
 address_list = [prod_solver, barn_solver]
 
 CHAT_IDS = {
@@ -54,7 +55,7 @@ def main():
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
-    
+
 
 def alert_bribes(last_block, current_block):
     deploy_block = 15_878_262
@@ -146,7 +147,7 @@ def alert_ycrv(last_block, current_block):
             else:
                 msg += f'{amt:,} CRV locked'
             msg += f'\n\n🔗 [Etherscan](https://etherscan.io/tx/{txn_hash})'
-            
+
             chat_id = CHAT_IDS["WAVEY_ALERTS"]
             if alerts_enabled:
                 chat_id = CHAT_IDS["CURVE_WARS"]
@@ -156,7 +157,7 @@ def alert_seasolver(last_block, current_block):
     barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
     prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
     settlement = Contract('0x9008d19f58aabd9ed0d60971565aa8510560ab41')
-    
+
     # Config
     deploy_block = 15_624_808
     start = max(last_block, deploy_block)
@@ -169,7 +170,31 @@ def alert_seasolver(last_block, current_block):
         solver = l.dict()['event_arguments']['solver']
         block = l.block_number
         trades = enumerate_trades(block, txn_hash)
-        format_solver_alert(solver, txn_hash, block, trades)
+        slippage = calculate_slippage(trades, block)
+        format_solver_alert(solver, txn_hash, block, trades, slippage)
+
+def calculate_slippage(trades, block):
+
+    ret = {}
+    for trade in trades:
+        buy_token_address = trade['buy_token_address']
+
+        # If there is a trade for eth, use weth instead since TH will never
+        # get native eth
+        if buy_token_address.lower() == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".lower():
+            buy_token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+
+        # we might have calculated the slippage previously
+        if buy_token_address in ret:
+            continue
+
+        buy_token = project.ERC20.at(buy_token_address)
+        before = buy_token.balanceOf(trade_handler, block_identifier=block-1)
+        after = buy_token.balanceOf(trade_handler, block_identifier=block+1)
+        ret[buy_token_address] = before-after
+
+    return ret
+
 
 def enumerate_trades(block, txn_hash):
     settlement = Contract('0x9008d19f58aabd9ed0d60971565aa8510560ab41')
@@ -220,7 +245,7 @@ def enumerate_trades(block, txn_hash):
         trades.append(trade)
     return trades
 
-def format_solver_alert(solver, txn_hash, block, trade_data):
+def format_solver_alert(solver, txn_hash, block, trade_data, slippage):
     prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
     cow_explorer_url = f'https://explorer.cow.fi/orders/{trade_data[0]["order_uid"]}'
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
@@ -238,7 +263,16 @@ def format_solver_alert(solver, txn_hash, block, trade_data):
         msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
     msg += f'\n{calc_gas_cost(txn_receipt)}'
     msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
-    
+
+    # Add slippage info
+    msg += "\n ✂️ Trade handler Slippage ✂️"
+    for key in slippage:
+        token = project.ERC20.at(key)
+        slippage = slippage[key]
+        color = 🔴 if slippage < 0 else 🟢
+        amount = round(slippage/10**token.decimals(),4)
+        msg += f"\n  {color} {token.symbol()}: {amount}"
+
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
     else:
