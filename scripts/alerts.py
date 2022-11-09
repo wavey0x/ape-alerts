@@ -175,7 +175,7 @@ def alert_seasolver(last_block, current_block):
 
 def calculate_slippage(trades, block):
 
-    ret = {}
+    slippages = {}
     for trade in trades:
         buy_token_address = trade['buy_token_address']
 
@@ -185,15 +185,15 @@ def calculate_slippage(trades, block):
             buy_token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
         # we might have calculated the slippage previously
-        if buy_token_address in ret:
+        if buy_token_address in slippages:
             continue
 
         buy_token = project.ERC20.at(buy_token_address)
         before = buy_token.balanceOf(trade_handler, block_identifier=block-1)
         after = buy_token.balanceOf(trade_handler, block_identifier=block+1)
-        ret[buy_token_address] = before-after
+        slippages[buy_token_address] = after - before
 
-    return ret
+    return slippages
 
 
 def enumerate_trades(block, txn_hash):
@@ -245,10 +245,11 @@ def enumerate_trades(block, txn_hash):
         trades.append(trade)
     return trades
 
-def format_solver_alert(solver, txn_hash, block, trade_data, slippage):
+def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
     cow_explorer_url = f'https://explorer.cow.fi/orders/{trade_data[0]["order_uid"]}'
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
+    ethtx_explorer_url = f'https://ethtx.info/mainnet/{txn_hash}'
     txn_receipt = networks.provider.get_receipt(txn_hash)
 
     ts = chain.blocks[block].timestamp
@@ -261,17 +262,18 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippage):
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
         msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
-    msg += f'\n{calc_gas_cost(txn_receipt)}'
-    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url})'
+    msg += "\n✂️ *Slippages*"
+    for key in slippages:
+        token = project.ERC20.at(key)
+        slippage = slippages[key]
+        color = "🔴" if slippage < 0 else "🟢"
+        amount = round(slippage/10**token.decimals(),4)
+        msg += f"\n   {color} {token.symbol()}: {amount}"
+    msg += f'\n\n{calc_gas_cost(txn_receipt)}'
+    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
 
     # Add slippage info
-    msg += "\n ✂️ Trade handler Slippage ✂️"
-    for key in slippage:
-        token = project.ERC20.at(key)
-        slippage = slippage[key]
-        color = 🔴 if slippage < 0 else 🟢
-        amount = round(slippage/10**token.decimals(),4)
-        msg += f"\n  {color} {token.symbol()}: {amount}"
+    
 
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
