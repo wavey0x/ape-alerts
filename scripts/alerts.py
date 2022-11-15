@@ -251,11 +251,13 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
     ethtx_explorer_url = f'https://ethtx.info/mainnet/{txn_hash}'
     txn_receipt = networks.provider.get_receipt(txn_hash)
-
     ts = chain.blocks[block].timestamp
+    index = get_index_in_block(txn_hash)
+    index = index if index != 1_000_000 else "???"
+
     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d %H:%M")
     msg = f'{"🧜‍♂️" if solver == prod_solver else "🐓"} *New solve detected!*\n'
-    msg += f'by [{solver[0:7]}...]({etherscan_base_url}address/{solver})  @ {dt}\n\n'
+    msg += f'by [{solver[0:7]}...]({etherscan_base_url}address/{solver})  index: {index} @ {dt}\n\n'
     msg += f'📕 *Trade(s)*:\n'
     for t in trade_data:
         user = t["owner"]
@@ -273,7 +275,6 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
 
     # Add slippage info
-    
 
     if alerts_enabled:
         chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
@@ -314,3 +315,11 @@ def calc_gas_cost(txn_receipt):
     eth_used = txn_receipt.gas_price * txn_receipt.gas_used
     gas_cost = oracle.getNormalizedValueUsdc('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', eth_used) / 10**6
     return f'💸 ${round(gas_cost,2):,} | {round(eth_used/1e18,4)} ETH'
+
+def get_index_in_block(txn_hash):
+    tx = chain.provider.get_receipt(txn_hash)
+    hashes = [x.txn_hash.hex() for x in chain.blocks[tx.block_number].transactions]
+    try:
+        return hashes.index(tx.txn_hash)
+    except:
+        return 1_000_000 # Not found
