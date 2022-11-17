@@ -273,7 +273,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
         try:
             msg += f"\n   {color} {token.symbol()}: {amount}"
         except:
-            msg += f"\n   {color} {token.symbol()}: -Error getting amt-"
+            msg += f"\n   {color} -SymbolError-: {amount}"
     msg += f'\n\n{calc_gas_cost(txn_receipt)}'
     msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
 
