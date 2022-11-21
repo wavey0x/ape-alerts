@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from functools import cached_property
 from typing import List, Optional, Union
-from ape import Contract, chain, project, networks
+from ape import Contract, chain, project, networks, convert
 from ape.api import ReceiptAPI
 from ape.types import AddressType, ContractLog
 from ape.utils import ManagerAccessMixin
@@ -47,6 +47,7 @@ def main():
     current_block = chain.blocks.height
     data['last_block'] = current_block
 
+    alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
     alert_seasolver(last_block, current_block)
@@ -56,6 +57,44 @@ def main():
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
 
+def alert_fee_distributor(last_block, current_block):
+    deploy_block = 11_278_886
+    DAY = 60 * 60 * 24
+    WEEK = DAY * 7
+    three_crv = Contract('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490')
+    pool = Contract('0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7')
+    ve = Contract('0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2')
+    yearn = convert('curve-voter.ychad.eth', AddressType)
+    start = max(last_block, deploy_block)
+    fee_distributor = Contract('0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc')
+    logs = list(fee_distributor.CheckpointToken.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        block = l.block_number
+        txn_hash = l.transaction_hash
+        time = args['time']
+        amount = args['tokens'] / 1e18
+        if amount > 0:
+            current_time = chain.blocks.head.timestamp
+            next_week_start = int(time / WEEK) * WEEK + WEEK
+            if next_week_start < time + DAY:
+                until = time + DAY
+            else:
+                until = next_week_start
+            dt = datetime.utcfromtimestamp(until).strftime("%m/%d/%Y, %H:%M:%S")
+            print(f'{txn_hash} | {amount} | claimable at {dt}')
+            amt = round(amount*pool.get_virtual_price()/1e18,2)
+            msg = f'⚖️ *New veCRV Fees Detected!*'
+            msg += f'\n\n*Total Amount*: ${amt:,} {three_crv.symbol()}'
+            ratio = ve.balanceOfAt(yearn, block) / ve.totalSupply()
+            amt = round(amt*ratio,2)
+            msg += f'\n\n*Est. Yearn Amount*: ${amt:,} {three_crv.symbol()}'
+            msg += f'\n\n*Claimable At*: {dt}'
+            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+            chat_id = CHAT_IDS["WAVEY_ALERTS"]
+            if alerts_enabled:
+                chat_id = CHAT_IDS["CURVE_WARS"]
+            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_bribes(last_block, current_block):
     deploy_block = 15_878_262
