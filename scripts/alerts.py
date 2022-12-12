@@ -30,6 +30,7 @@ CHAT_IDS = {
     "CURVE_WARS": "-1001712241544",
     "GNOSIS_CHAIN_POC": "-1001516144118",
     "YBRIBE": "-1001862925311",
+    "VEYFI": "-1001558128423",
 }
 
 SKIP_LIST = [
@@ -47,6 +48,7 @@ def main():
     current_block = chain.blocks.height
     data['last_block'] = current_block
 
+    alert_veyfi_lock(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
@@ -56,6 +58,31 @@ def main():
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
+
+def alert_veyfi_lock(last_block, current_block):
+    deploy_block = 15_974_608
+    veyfi = Contract('0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5')
+    start = max(last_block, deploy_block)
+    logs = list(veyfi.Supply.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        block = l.block_number
+        ts = chain.blocks[block].timestamp
+        txn_hash = l.transaction_hash
+        old_supply = args['old_supply']
+        new_supply = args['new_supply']
+        amount = new_supply - old_supply
+        if amount != 0:
+            current_time = chain.blocks.head.timestamp
+            
+            dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
+            msg = f'🔒 *veYFI Supply Change Detected!*'
+            msg += f'\n\n*Supply change*: {round(amount/1e18,2):,} YFI'
+            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+            chat_id = CHAT_IDS["WAVEY_ALERTS"]
+            if alerts_enabled:
+                chat_id = CHAT_IDS["VEYFI"]
+            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_fee_distributor(last_block, current_block):
     deploy_block = 11_278_886
