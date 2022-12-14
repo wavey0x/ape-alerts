@@ -48,7 +48,7 @@ def main():
     current_block = chain.blocks.height
     data['last_block'] = current_block
 
-    alert_veyfi_lock(last_block, current_block)
+    # alert_veyfi_lock(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
