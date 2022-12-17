@@ -317,6 +317,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     cow_explorer_url = f'https://explorer.cow.fi/orders/{trade_data[0]["order_uid"]}'
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
     ethtx_explorer_url = f'https://ethtx.info/mainnet/{txn_hash}'
+    tonkers_base_url = f'https://prod.seasolver.dev/route/'
     txn_receipt = networks.provider.get_receipt(txn_hash)
     ts = chain.blocks[block].timestamp
     index = get_index_in_block(txn_hash)
@@ -330,7 +331,10 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
         user = t["owner"]
         sell_amt = round(t["sell_amount"]/10**t["sell_token_decimals"],4)
         buy_amt = round(t["buy_amount"]/10**t["buy_token_decimals"],4)
-        msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} --> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
+        buy_token = t["buy_token_address"]
+        if buy_token.lower() == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".lower():
+            buy_token = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        msg += f'    [ 🐻‍❄️ ]({tonkers_base_url}{t["sell_token_address"]}/{buy_token}) | [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} -> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
     msg += "\n✂️ *Slippages*"
     for key in slippages:
         token = project.ERC20.at(key)
@@ -342,7 +346,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
         except:
             msg += f"\n   {color} -SymbolError-: {amount}"
     msg += f'\n\n{calc_gas_cost(txn_receipt)}'
-    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow Explorer]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
+    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
 
     # Add slippage info
 
