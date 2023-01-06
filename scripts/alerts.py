@@ -84,7 +84,10 @@ def alert_veyfi_lock(last_block, current_block):
             old_supply = args['old_supply']
             new_supply = args['new_supply']
             # code.interact(local=locals())
-            user = list(modify_logs)[idx]['user']
+            try:
+                user = list(modify_logs)[idx]['user']
+            except:
+                continue
             amount = new_supply - old_supply
             idx += 1
             if amount == 0:
@@ -93,12 +96,15 @@ def alert_veyfi_lock(last_block, current_block):
                 # New user?
                 new_user = veyfi.balanceOf(user, block_identifier=block-1) == 0
                 locked_end = veyfi.locked(user,block_identifier=block)['end']
+                locked_amount = veyfi.locked(user,block_identifier=block)['amount']/1e18
+                balance = veyfi.balanceOf(user,block_identifier=block)/1e18
                 current_time = chain.blocks[block].timestamp
                 remaining = locked_end - current_time
                 abbr, link, markdown = abbreviate_address(user)
                 msg = f'🔒 *veYFI Deposit Detected!*\n\n'
-                msg += f'User: {markdown} {"🆕" if new_user else ""}\n'
                 msg += f'Supply increase: {round(amount/1e18,2):,} YFI\n'
+                msg += f'User: {markdown} {"🆕" if new_user else ""}\n'
+                msg += f'Balance | Locked: {round(balance,2):,} veYFI | {round(locked_amount,2):,} YFI\n'
                 msg += f'Lock time remaining: {humanize_seconds(remaining)}'
                 msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
                 chat_id = CHAT_IDS["WAVEY_ALERTS"]
