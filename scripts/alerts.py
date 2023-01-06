@@ -11,7 +11,7 @@ from ape.utils import ManagerAccessMixin
 from ape_tokens import tokens
 from ape_tokens.managers import ERC20
 from eth_abi.packed import encode_abi_packed
-from eth_utils import keccak
+from eth_utils import keccak, humanize_seconds
 from datetime import datetime, timezone
 
 load_dotenv(find_dotenv())
@@ -24,6 +24,10 @@ barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
 prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
 trade_handler = '0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b'
 address_list = [prod_solver, barn_solver]
+
+YFI_LOCKERS = {
+    '0xF750162fD81F9a436d74d737EF6eE8FC08e98220': 'StakeDAO',
+}
 
 CHAT_IDS = {
     "WAVEY_ALERTS": "-789090497",
@@ -49,17 +53,18 @@ def main():
     data['last_block'] = current_block
 
     alert_veyfi_lock(last_block, current_block)
-    alert_fee_distributor(last_block, current_block)
-    alert_bribes(last_block, current_block)
-    alert_ycrv(last_block, current_block)
-    alert_seasolver(last_block, current_block)
-    find_reverts(address_list, last_block-1, current_block)
+    # alert_fee_distributor(last_block, current_block)
+    # alert_bribes(last_block, current_block)
+    # alert_ycrv(last_block, current_block)
+    # alert_seasolver(last_block, current_block)
+    # find_reverts(address_list, last_block-1, current_block)
 
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
 
 def alert_veyfi_lock(last_block, current_block):
+    import code
     deploy_block = 15_974_608
     veyfi = Contract('0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5')
     start = max(last_block, deploy_block)
@@ -69,20 +74,79 @@ def alert_veyfi_lock(last_block, current_block):
         block = l.block_number
         ts = chain.blocks[block].timestamp
         txn_hash = l.transaction_hash
-        old_supply = args['old_supply']
-        new_supply = args['new_supply']
-        amount = new_supply - old_supply
-        if amount != 0:
-            current_time = chain.blocks.head.timestamp
-            
-            dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
-            msg = f'🔒 *veYFI Supply Change Detected!*'
-            msg += f'\n\n*Supply change*: {round(amount/1e18,2):,} YFI'
-            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-            chat_id = CHAT_IDS["WAVEY_ALERTS"]
-            if alerts_enabled:
-                chat_id = CHAT_IDS["VEYFI"]
-            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+        txn_receipt = networks.provider.get_receipt(txn_hash)
+
+        supply_logs = txn_receipt.decode_logs([veyfi.Supply])
+        modify_logs = txn_receipt.decode_logs([veyfi.ModifyLock])
+        for s in supply_logs:
+            idx = 0
+            args = s.dict()['event_arguments']
+            old_supply = args['old_supply']
+            new_supply = args['new_supply']
+            # code.interact(local=locals())
+            user = list(modify_logs)[idx]['user']
+            amount = new_supply - old_supply
+            idx += 1
+            if amount == 0:
+                continue
+            elif amount > 0:
+                # New user?
+                new_user = veyfi.balanceOf(user, block_identifier=block-1) == 0
+                locked_end = veyfi.locked(user,block_identifier=block)['end']
+                current_time = chain.blocks[block].timestamp
+                remaining = locked_end - current_time
+                abbr, link, markdown = abbreviate_address(user)
+                msg = f'🔒 *veYFI Deposit Detected!*\n\n'
+                msg += f'User: {markdown} {"🆕" if new_user else ""}\n'
+                msg += f'Supply increase: {round(amount/1e18,2):,} YFI\n'
+                msg += f'Lock time remaining: {humanize_seconds(remaining)}'
+                msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+                chat_id = CHAT_IDS["WAVEY_ALERTS"]
+                if alerts_enabled:
+                    chat_id = CHAT_IDS["VEYFI"]
+                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+            else:
+                new_user = veyfi.balanceOf(user, block_identifier=block-1) == 0
+                locked_end = veyfi.locked(user,block_identifier=block)['end']
+                current_time = chain.blocks.head.timestamp
+                remaining = locked_end - current_time
+                abbr, link, markdown = abbreviate_address(user)
+                msg = f'🔓 *veYFI Withdraw Detected!*\n\n'
+                msg += f'User: {markdown}\n'
+                msg += f'Supply decrease: {round(amount/1e18,2):,} YFI'
+                msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+                chat_id = CHAT_IDS["WAVEY_ALERTS"]
+                if alerts_enabled:
+                    chat_id = CHAT_IDS["VEYFI"]
+                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
+        # if len(supply_logs) > 0 and len(modify_logs) == len(supply_logs):
+        #     idx = len(supply_logs)-1
+        #     s = supply_logs[idx]
+        #     s['event_arguments']
+        #     old_supply = args['old_supply']
+        #     new_supply = args['new_supply']
+        # penalty_logs = txn_receipt.decode_logs([veyfi.Penalty])
+        # withdraw_logs = txn_receipt.decode_logs([veyfi.Withdraw])
+
+        # modify_logs[0]
+        #     print(l)
+        #     user = 
+        # print(txn_receipt.events)
+        # s.dict()['event_arguments']
+        # old_supply = args['old_supply']
+        # new_supply = args['new_supply']
+        # amount = new_supply - old_supply
+        # if amount != 0:
+        #     current_time = chain.blocks.head.timestamp
+        #     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
+        #     msg = f'🔒 *veYFI Supply Change Detected!*'
+        #     msg += f'\n\n*Supply change*: {round(amount/1e18,2):,} YFI'
+        #     msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+        #     chat_id = CHAT_IDS["WAVEY_ALERTS"]
+        #     if alerts_enabled:
+        #         chat_id = CHAT_IDS["VEYFI"]
+        #     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_fee_distributor(last_block, current_block):
     deploy_block = 11_278_886
@@ -360,9 +424,13 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def abbreviate_address(address):
-    abbr = address[0:7]
     link = f'https://etherscan.io/address/{address}'
-    markdown = f'[{abbr}...]({link})'
+    if address in YFI_LOCKERS:
+        abbr = YFI_LOCKERS[address]
+        markdown = f'[{abbr}]({link})'
+    else:
+        abbr = address[0:7]
+        markdown = f'[{abbr}...]({link})'
     return abbr, link, markdown
 
 def find_reverts(address_list, start_block, end_block):
