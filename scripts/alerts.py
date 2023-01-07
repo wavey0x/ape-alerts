@@ -102,9 +102,10 @@ def alert_veyfi_lock(last_block, current_block):
                 remaining = locked_end - current_time
                 abbr, link, markdown = abbreviate_address(user)
                 msg = f'🔒 *veYFI Deposit Detected!*\n\n'
-                msg += f'Supply increase: {round(amount/1e18,2):,} YFI\n'
+                msg += f'Supply increase: {round(amount/1e18,3):,} YFI\n\n'
                 msg += f'User: {markdown} {"🆕" if new_user else ""}\n'
-                msg += f'Balance | Locked: {round(balance,2):,} veYFI | {round(locked_amount,2):,} YFI\n'
+                msg += f'Balance: {round(balance,3):,} veYFI\n'
+                msg += f'Locked: {round(locked_amount,3):,} YFI\n'
                 msg += f'Lock time remaining: {humanize_seconds(remaining)}'
                 msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
                 chat_id = CHAT_IDS["WAVEY_ALERTS"]
