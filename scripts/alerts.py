@@ -53,11 +53,11 @@ def main():
     data['last_block'] = current_block
 
     alert_veyfi_lock(last_block, current_block)
-    # alert_fee_distributor(last_block, current_block)
-    # alert_bribes(last_block, current_block)
-    # alert_ycrv(last_block, current_block)
-    # alert_seasolver(last_block, current_block)
-    # find_reverts(address_list, last_block-1, current_block)
+    alert_fee_distributor(last_block, current_block)
+    alert_bribes(last_block, current_block)
+    alert_ycrv(last_block, current_block)
+    alert_seasolver(last_block, current_block)
+    find_reverts(address_list, last_block-1, current_block)
 
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
