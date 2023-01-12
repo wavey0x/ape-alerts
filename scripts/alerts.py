@@ -57,7 +57,7 @@ def main():
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
     alert_seasolver(last_block, current_block)
-    find_reverts(address_list, last_block-1, current_block)
+    find_reverts(address_list, last_block, current_block)
 
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
@@ -208,8 +208,8 @@ def alert_bribes(last_block, current_block):
         amount = args['amount']
         fee = args['fee']
         gauge_name = ''
-        abbr, link, markdown = abbreviate_address(briber)
-        briber = markdown
+        abbr, link, briber_markdown = abbreviate_address(briber)
+        abbr, link, gauge_markdown = abbreviate_address(gauge)
         try:
             gauge_name = Contract(gauge).name()
         except:
@@ -218,8 +218,8 @@ def alert_bribes(last_block, current_block):
         fee = round(fee/10**token.decimals(),2)
         msg = f'🤑 *New Bribe Add Detected!*'
         msg += f'\n\n*Amount*: {amt:,} {token.symbol()}'
-        msg += f'\n*Gauge*: {gauge_name} {markdown}'
-        msg += f'\n*Briber*: {briber}'
+        msg += f'\n*Gauge*: {gauge_name} {gauge_markdown}'
+        msg += f'\n*Briber*: {briber_markdown}'
         msg += f'\n*Fee*: {fee:,} {token.symbol()}'
         msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
