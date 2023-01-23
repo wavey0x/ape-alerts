@@ -206,6 +206,8 @@ def alert_bribes(last_block, current_block):
         gauge = args['gauge']
         token = Contract(args['reward_token'])
         amount = args['amount']
+        if amount == 0:
+            continue
         fee = args['fee']
         gauge_name = ''
         abbr, link, briber_markdown = abbreviate_address(briber)
