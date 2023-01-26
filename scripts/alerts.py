@@ -45,7 +45,7 @@ def main():
     # last_block
     with open("local_data.json", "r") as jsonFile:
         data = json.load(jsonFile)
-        last_block = data['last_block']
+        last_block = data['last_block'] + 1
     if not last_block:
         last_block = 15_000_000
     print(f'Starting from block number {last_block}')
@@ -69,16 +69,22 @@ def alert_veyfi_lock(last_block, current_block):
     veyfi = Contract('0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5')
     start = max(last_block, deploy_block)
     logs = list(veyfi.Supply.range(start, current_block))
+    receipts = []
     for l in logs:
-        args = l.dict()['event_arguments']
-        block = l.block_number
-        ts = chain.blocks[block].timestamp
         txn_hash = l.transaction_hash
         txn_receipt = networks.provider.get_receipt(txn_hash)
+        if txn_receipt not in receipts:
+            receipts.append(txn_receipt)
+        
 
-        supply_logs = txn_receipt.decode_logs([veyfi.Supply])
-        modify_logs = txn_receipt.decode_logs([veyfi.ModifyLock])
+    for r in receipts:
+        supply_logs = r.decode_logs([veyfi.Supply])
+        modify_logs = r.decode_logs([veyfi.ModifyLock])
         for s in supply_logs:
+            block = l.block_number
+            ts = chain.blocks[block].timestamp
+            txn_hash = l.transaction_hash
+            txn_receipt = networks.provider.get_receipt(txn_hash)
             idx = 0
             args = s.dict()['event_arguments']
             old_supply = args['old_supply']
