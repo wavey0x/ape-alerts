@@ -45,7 +45,7 @@ def main():
     # last_block
     with open("local_data.json", "r") as jsonFile:
         data = json.load(jsonFile)
-        last_block = data['last_block'] + 1
+        last_block = data['last_block']
     if not last_block:
         last_block = 15_000_000
     print(f'Starting from block number {last_block}')
