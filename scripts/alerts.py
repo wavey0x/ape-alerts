@@ -51,7 +51,6 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-
     alert_veyfi_lock(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
@@ -397,6 +396,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     cow_explorer_url = f'https://explorer.cow.fi/tx/{txn_hash}'
     ethtx_explorer_url = f'https://ethtx.info/mainnet/{txn_hash}'
     tonkers_base_url = f'https://prod.seasolver.dev/route/'
+    eigen_url = f'https://eigenphi.io/mev/eigentx/{txn_hash}'
     barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
     if solver == barn_solver:
         tonkers_base_url = f'https://barn.seasolver.dev/route/'
@@ -428,7 +428,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
         except:
             msg += f"\n   {color} -SymbolError-: {amount}"
     msg += f'\n\n{calc_gas_cost(txn_receipt)}'
-    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow]({cow_explorer_url}) | [EthTx]({ethtx_explorer_url})'
+    msg += f'\n\n🔗 [Etherscan]({etherscan_base_url}tx/{txn_hash}) | [Cow]({cow_explorer_url}) | [Eigen]({eigen_url}) | [EthTx]({ethtx_explorer_url})'
 
     # Add slippage info
 
