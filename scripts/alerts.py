@@ -276,11 +276,12 @@ def alert_ycrv(last_block, current_block):
         args = l.dict()['event_arguments']
         value = args['value']
         minter = args['minter']
-        receiver = args['receiver']
         if value > alert_size_threshold:
             block = l.block_number
             ts = chain.blocks[block].timestamp
             txn_hash = l.transaction_hash
+            txn_receipt = networks.provider.get_receipt(txn_hash)
+            receiver = txn_receipt.transaction.sender# args['receiver']
             dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
             abbr, link, markdown = abbreviate_address(receiver)
             msg = f'✨ *YCRV mint detected!*\n\n'
