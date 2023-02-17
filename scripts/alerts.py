@@ -281,7 +281,7 @@ def alert_ycrv(last_block, current_block):
             ts = chain.blocks[block].timestamp
             txn_hash = l.transaction_hash
             txn_receipt = networks.provider.get_receipt(txn_hash)
-            receiver = txn_receipt.transaction.sender# args['receiver']
+            receiver = txn_receipt.transaction.sender # args['receiver'] <--- this method gets 
             dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
             abbr, link, markdown = abbreviate_address(receiver)
             msg = f'✨ *YCRV mint detected!*\n\n'
@@ -361,6 +361,8 @@ def enumerate_trades(block, txn_hash):
                 sell_token_decimals = project.ERC20.at(sell_token).decimals()
         except:
             sell_token_symbol = '? Cannot Find ?'
+            if sell_token == '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2':
+                sell_token_symbol = 'MKR'
             sell_token_decimals = 18
 
         try:
@@ -373,6 +375,8 @@ def enumerate_trades(block, txn_hash):
                 buy_token_decimals = project.ERC20.at(buy_token).decimals()
         except:
             buy_token_symbol = '? Cannot Find ?'
+            if buy_token == '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2':
+                buy_token_symbol = 'MKR'
             buy_token_decimals = 18
 
         trade = {
