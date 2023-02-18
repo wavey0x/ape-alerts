@@ -22,7 +22,7 @@ bot = telebot.TeleBot(telegram_bot_key)
 oracle = project.ORACLE.at('0x83d95e0D5f402511dB06817Aff3f9eA88224B030')
 barn_solver = '0x8a4e90e9AFC809a69D2a3BDBE5fff17A12979609'
 prod_solver = '0x398890BE7c4FAC5d766E1AEFFde44B2EE99F38EF'
-trade_handler = '0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b'
+trade_handler = '0xb634316E06cC0B358437CbadD4dC94F1D3a92B3b' #'0xcADBA199F3AC26F67f660C89d43eB1820b7f7a3b'
 address_list = [prod_solver, barn_solver]
 
 YFI_LOCKERS = {
