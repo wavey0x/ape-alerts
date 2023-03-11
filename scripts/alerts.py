@@ -35,6 +35,7 @@ CHAT_IDS = {
     "GNOSIS_CHAIN_POC": "-1001516144118",
     "YBRIBE": "-1001862925311",
     "VEYFI": "-1001558128423",
+    "SEASOLVER_SA": "-1001829083462",
 }
 
 SKIP_LIST = [
@@ -421,7 +422,9 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
         buy_token = t["buy_token_address"]
         if buy_token.lower() == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".lower():
             buy_token = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        msg += f'    [ 🐻‍❄️ ]({tonkers_base_url}{t["sell_token_address"]}/{buy_token}) | [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} -> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
+        #msg += f'    [ 🐻‍❄️ ]({tonkers_base_url}{t["sell_token_address"]}/{buy_token}) | [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} -> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
+        msg += f'    [{t["sell_token_symbol"]}]({etherscan_base_url}token/{t["sell_token_address"]}) {sell_amt:,} -> [{t["buy_token_symbol"]}]({etherscan_base_url}token/{t["buy_token_address"]}) {buy_amt:,} | [{user[0:7]}...]({etherscan_base_url}address/{user})\n'
+
     msg += "\n✂️ *Slippages*"
     for key in slippages:
         token = project.ERC20.at(key)
@@ -438,7 +441,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
     # Add slippage info
 
     if alerts_enabled:
-        chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
+        chat_id = CHAT_IDS["SEASOLVER_SA"]
     else:
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
