@@ -13,6 +13,8 @@ from ape_tokens.managers import ERC20
 from eth_abi.packed import encode_abi_packed
 from eth_utils import keccak, humanize_seconds
 from datetime import datetime, timezone
+from sqlalchemy import desc, asc
+from models import Reports, Event, Transactions, Session, engine, select
 
 load_dotenv(find_dotenv())
 telegram_bot_key = os.environ.get('WAVEY_ALERTS_BOT_KEY')
@@ -43,7 +45,6 @@ SKIP_LIST = [
 ]
 
 def main():
-    # last_block
     with open("local_data.json", "r") as jsonFile:
         data = json.load(jsonFile)
         last_block = data['last_block']
@@ -52,7 +53,7 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-    alert_veyfi_lock(last_block, current_block)
+    alert_veyfi_locks(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
@@ -63,7 +64,7 @@ def main():
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
 
-def alert_veyfi_lock(last_block, current_block):
+def alert_veyfi_locks(last_block, current_block):
     import code
     deploy_block = 15_974_608
     veyfi = Contract('0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5')
@@ -80,6 +81,7 @@ def alert_veyfi_lock(last_block, current_block):
     for r in receipts:
         supply_logs = r.decode_logs([veyfi.Supply])
         modify_logs = r.decode_logs([veyfi.ModifyLock])
+        withdraw_logs = r.decode_logs([veyfi.Withdraw])
         for s in supply_logs:
             block = l.block_number
             ts = chain.blocks[block].timestamp
@@ -89,12 +91,14 @@ def alert_veyfi_lock(last_block, current_block):
             args = s.dict()['event_arguments']
             old_supply = args['old_supply']
             new_supply = args['new_supply']
-            # code.interact(local=locals())
+            print(old_supply/1e18)
+            print(new_supply/1e18)
+            amount = new_supply - old_supply
+            print("Diff -->",amount/1e18)
             try:
                 user = list(modify_logs)[idx]['user']
             except:
                 continue
-            amount = new_supply - old_supply
             idx += 1
             if amount == 0:
                 continue
@@ -117,49 +121,27 @@ def alert_veyfi_lock(last_block, current_block):
                 chat_id = CHAT_IDS["WAVEY_ALERTS"]
                 if alerts_enabled:
                     chat_id = CHAT_IDS["VEYFI"]
-                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
-            else:
-                new_user = veyfi.balanceOf(user, block_identifier=block-1) == 0
-                locked_end = veyfi.locked(user,block_identifier=block)['end']
-                current_time = chain.blocks.head.timestamp
-                remaining = locked_end - current_time
-                abbr, link, markdown = abbreviate_address(user)
-                msg = f'🔓 *veYFI Withdraw Detected!*\n\n'
-                msg += f'User: {markdown}\n'
-                msg += f'Supply decrease: {round(amount/1e18,2):,} YFI'
-                msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-                chat_id = CHAT_IDS["WAVEY_ALERTS"]
-                if alerts_enabled:
-                    chat_id = CHAT_IDS["VEYFI"]
-                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+                bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)                
 
-        # if len(supply_logs) > 0 and len(modify_logs) == len(supply_logs):
-        #     idx = len(supply_logs)-1
-        #     s = supply_logs[idx]
-        #     s['event_arguments']
-        #     old_supply = args['old_supply']
-        #     new_supply = args['new_supply']
-        # penalty_logs = txn_receipt.decode_logs([veyfi.Penalty])
-        # withdraw_logs = txn_receipt.decode_logs([veyfi.Withdraw])
-
-        # modify_logs[0]
-        #     print(l)
-        #     user = 
-        # print(txn_receipt.events)
-        # s.dict()['event_arguments']
-        # old_supply = args['old_supply']
-        # new_supply = args['new_supply']
-        # amount = new_supply - old_supply
-        # if amount != 0:
-        #     current_time = chain.blocks.head.timestamp
-        #     dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
-        #     msg = f'🔒 *veYFI Supply Change Detected!*'
-        #     msg += f'\n\n*Supply change*: {round(amount/1e18,2):,} YFI'
-        #     msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-        #     chat_id = CHAT_IDS["WAVEY_ALERTS"]
-        #     if alerts_enabled:
-        #         chat_id = CHAT_IDS["VEYFI"]
-        #     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+    logs = list(veyfi.Withdraw.range(start, current_block))
+    for l in logs:
+        txn_hash = l.transaction_hash
+        block = l.block_number
+        args = l.dict()['event_arguments']
+        amount = args['amount']
+        user = args['user']
+        current_time = chain.blocks.head.timestamp
+        locked_amount = veyfi.locked(user,block_identifier=block-1)['amount']/1e18
+        abbr, link, markdown = abbreviate_address(user)
+        msg = f'🔓 *veYFI Withdraw Detected!*\n\n'
+        msg += f'User: {markdown}\n'
+        msg += f'Amount withdrawn: {round(amount/1e18,2):,} YFI\n'
+        msg += f'Penalty: {round(locked_amount-amount/1e18,2):,} YFI'
+        msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+        chat_id = CHAT_IDS["WAVEY_ALERTS"]
+        if alerts_enabled:
+            chat_id = CHAT_IDS["VEYFI"]
+        bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_fee_distributor(last_block, current_block):
     deploy_block = 11_278_886
@@ -242,7 +224,6 @@ def alert_bribes(last_block, current_block):
         txn_hash = l.transaction_hash
         user = args['user']
         gauge = args['gauge']
-        # token = Contract(args['reward_token'])
         amount = args['amount']
 
         gauge_name = ''
