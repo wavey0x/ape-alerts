@@ -14,7 +14,7 @@ from eth_abi.packed import encode_abi_packed
 from eth_utils import keccak, humanize_seconds
 from datetime import datetime, timezone
 from sqlalchemy import desc, asc
-from models import Reports, Event, Transactions, Session, engine, select
+# from models import Reports, Event, Transactions, Session, engine, select
 
 load_dotenv(find_dotenv())
 telegram_bot_key = os.environ.get('WAVEY_ALERTS_BOT_KEY')
