@@ -4,3 +4,4 @@ local_data.json
 env
 .build
 scripts/__pycache__
+x.py

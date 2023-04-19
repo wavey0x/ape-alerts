@@ -58,7 +58,7 @@ def main():
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
     alert_seasolver(last_block, current_block)
-    find_reverts(address_list, last_block, current_block)
+    # find_reverts(address_list, last_block, current_block)
 
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
