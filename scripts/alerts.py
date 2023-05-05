@@ -423,6 +423,7 @@ def format_solver_alert(solver, txn_hash, block, trade_data, slippages):
 
     if alerts_enabled:
         chat_id = CHAT_IDS["SEASOLVER_SA"]
+        chat_id = CHAT_IDS["GNOSIS_CHAIN_POC"]
     else:
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
     bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
