@@ -53,7 +53,6 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-    alert_proxy_upgraded(last_block, current_block)
     alert_veyfi_locks(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
@@ -64,21 +63,6 @@ def main():
     data['last_block'] = current_block
     with open("local_data.json", 'w') as fp:
         json.dump(data, fp, indent=2)
-
-def alert_proxy_upgraded(last_block, current_block):
-    deploy_block = 15_974_608
-    veyfi = Contract('0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5')
-    start = max(last_block, deploy_block)
-    logs = list(veyfi.Supply.range(start, current_block))
-    receipts = []
-    for l in logs:
-        txn_hash = l.transaction_hash
-
-    msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
-    chat_id = CHAT_IDS["WAVEY_ALERTS"]
-    if alerts_enabled:
-        chat_id = CHAT_IDS["VEYFI"]
-    bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)  
 
 def alert_veyfi_locks(last_block, current_block):
     import code
