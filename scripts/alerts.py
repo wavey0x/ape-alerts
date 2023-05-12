@@ -33,10 +33,10 @@ YFI_LOCKERS = {
 
 CHAT_IDS = {
     "WAVEY_ALERTS": "-789090497",
-    "CURVE_WARS": "-1653990357",
+    "YCRV": "-1001653990357",
     "GNOSIS_CHAIN_POC": "-1001516144118",
     "YBRIBE": "-1001862925311",
-    "VEYFI": "-1615931572",
+    "VEYFI": "-1001615931572",
     "SEASOLVER_SA": "-1001829083462",
 }
 
@@ -179,7 +179,7 @@ def alert_fee_distributor(last_block, current_block):
             msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
             chat_id = CHAT_IDS["WAVEY_ALERTS"]
             if alerts_enabled:
-                chat_id = CHAT_IDS["CURVE_WARS"]
+                chat_id = CHAT_IDS["YCRV"]
             bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_bribes(last_block, current_block):
@@ -278,7 +278,7 @@ def alert_ycrv(last_block, current_block):
 
             chat_id = CHAT_IDS["WAVEY_ALERTS"]
             if alerts_enabled:
-                chat_id = CHAT_IDS["CURVE_WARS"]
+                chat_id = CHAT_IDS["YCRV"]
             bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_seasolver(last_block, current_block):
