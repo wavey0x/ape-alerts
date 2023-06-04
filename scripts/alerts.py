@@ -111,7 +111,7 @@ def alert_veyfi_locks(last_block, current_block):
                 current_time = chain.blocks[block].timestamp
                 remaining = locked_end - current_time
                 abbr, link, markdown = abbreviate_address(user)
-                msg = f'🔒 *veYFI Deposit Detected!*\n\n'
+                msg = f'🔐 *veYFI Deposit Detected!*\n\n'
                 msg += f'Supply increase: {round(amount/1e18,3):,} YFI\n\n'
                 msg += f'User: {markdown} {"🆕" if new_user else ""}\n'
                 msg += f'Balance: {round(balance,3):,} veYFI\n'
@@ -133,7 +133,7 @@ def alert_veyfi_locks(last_block, current_block):
         current_time = chain.blocks.head.timestamp
         locked_amount = veyfi.locked(user,block_identifier=block-1)['amount']/1e18
         abbr, link, markdown = abbreviate_address(user)
-        msg = f'🔓 *veYFI Withdraw Detected!*\n\n'
+        msg = f'🪓 *veYFI Withdraw Detected!*\n\n'
         msg += f'User: {markdown}\n'
         msg += f'Amount withdrawn: {round(amount/1e18,2):,} YFI\n'
         msg += f'Penalty: {round(locked_amount-amount/1e18,2):,} YFI'
