@@ -130,13 +130,16 @@ def alert_veyfi_locks(last_block, current_block):
         args = l.dict()['event_arguments']
         amount = args['amount']
         user = args['user']
+        locked_end = veyfi.locked(user,block_identifier=block-1)['end']
         current_time = chain.blocks.head.timestamp
+        remaining = max(0, locked_end - current_time) # Before withdraw
         locked_amount = veyfi.locked(user,block_identifier=block-1)['amount']/1e18
         abbr, link, markdown = abbreviate_address(user)
         msg = f'🪓 *veYFI Withdraw Detected!*\n\n'
         msg += f'User: {markdown}\n'
         msg += f'Amount withdrawn: {round(amount/1e18,2):,} YFI\n'
-        msg += f'Penalty: {round(locked_amount-amount/1e18,2):,} YFI'
+        msg += f'Penalty: {round(locked_amount-amount/1e18,2):,} YFI\n'
+        msg += f'Time remaining: {humanize_seconds(remaining)}'
         msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
         if alerts_enabled:
