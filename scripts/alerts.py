@@ -83,9 +83,9 @@ def alert_veyfi_locks(last_block, current_block):
         modify_logs = r.decode_logs([veyfi.ModifyLock])
         withdraw_logs = r.decode_logs([veyfi.Withdraw])
         for s in supply_logs:
-            block = l.block_number
+            block = s.block_number
             ts = chain.blocks[block].timestamp
-            txn_hash = l.transaction_hash
+            txn_hash = s.transaction_hash
             txn_receipt = networks.provider.get_receipt(txn_hash)
             idx = 0
             args = s.dict()['event_arguments']
