@@ -57,6 +57,7 @@ def main():
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
     alert_ycrv(last_block, current_block)
+    alert_ycrv_swap(last_block, current_block)
     # alert_seasolver(last_block, current_block)
     # find_reverts(address_list, last_block, current_block)
 
@@ -145,6 +146,35 @@ def alert_veyfi_locks(last_block, current_block):
         if alerts_enabled:
             chat_id = CHAT_IDS["VEYFI"]
         bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
+def alert_ycrv_swap(last_block, current_block):
+    deploy_block = 16_775_458
+    crv = '0xD533a949740bb3306d119CC777fa900bA034cd52'
+    ycrv = '0xFCc5c47bE19d06BF83eB04298b026F81069ff65b'
+    start = max(last_block, deploy_block)
+    pool = Contract('0x99f5aCc8EC2Da2BC0771c32814EFF52b712de1E5')
+    logs = list(pool.TokenExchange.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        block = l.block_number
+        txn_hash = l.transaction_hash
+        log_time = chain.blocks[block].timestamp
+        sell_token = crv if args['sold_id'] == 0 else ycrv
+        buy_token = crv if sell_token == ycrv else ycrv
+        amount_sold = args['tokens_sold'] / 1e18
+        amount_bought = args['tokens_bought'] / 1e18
+        if amount_sold + amount_bought > 350_000:
+            current_time = chain.blocks.head.timestamp
+            dt = datetime.utcfromtimestamp(log_time).strftime("%m/%d/%Y, %H:%M:%S")
+            msg = f'🐳 *New yCRV Swap Detected!*'
+            msg += f'\n\n{amount_sold:,} {Contract(sell_token).symbol()} swapped for'
+            msg += f'\n{amount_bought:,} {Contract(buy_token).symbol()}'
+            msg += f'\n\n{dt}'
+            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+            chat_id = CHAT_IDS["WAVEY_ALERTS"]
+            if alerts_enabled:
+                chat_id = CHAT_IDS["YCRV"]
+            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 def alert_fee_distributor(last_block, current_block):
     deploy_block = 11_278_886
