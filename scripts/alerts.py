@@ -167,8 +167,8 @@ def alert_ycrv_swap(last_block, current_block):
             current_time = chain.blocks.head.timestamp
             dt = datetime.utcfromtimestamp(log_time).strftime("%m/%d/%Y, %H:%M:%S")
             msg = f'🐳 *New yCRV Swap Detected!*'
-            msg += f'\n\n{amount_sold:,} {Contract(sell_token).symbol()} swapped for'
-            msg += f'\n{amount_bought:,} {Contract(buy_token).symbol()}'
+            msg += f'\n\n{amount_sold:,.2f} {Contract(sell_token).symbol()} swapped for'
+            msg += f'\n{amount_bought:,.2f} {Contract(buy_token).symbol()}'
             msg += f'\n\n{dt}'
             msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
             chat_id = CHAT_IDS["WAVEY_ALERTS"]
