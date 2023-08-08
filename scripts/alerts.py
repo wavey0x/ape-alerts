@@ -53,10 +53,10 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-    alert_veyfi_locks(last_block, current_block)
-    alert_fee_distributor(last_block, current_block)
-    alert_bribes(last_block, current_block)
-    alert_ycrv(last_block, current_block)
+    # alert_veyfi_locks(last_block, current_block)
+    # alert_fee_distributor(last_block, current_block)
+    # alert_bribes(last_block, current_block)
+    # alert_ycrv(last_block, current_block)
     alert_ycrv_swap(last_block, current_block)
     # alert_seasolver(last_block, current_block)
     # find_reverts(address_list, last_block, current_block)
@@ -166,9 +166,56 @@ def alert_ycrv_swap(last_block, current_block):
         if amount_sold + amount_bought > 350_000:
             current_time = chain.blocks.head.timestamp
             dt = datetime.utcfromtimestamp(log_time).strftime("%m/%d/%Y, %H:%M:%S")
-            msg = f'🐳 *New yCRV Swap Detected!*'
+            emoji = f"{'📈' if buy_token == ycrv else '📉'}"
+            msg = f'{emoji} *New yCRV Swap Detected!*'
             msg += f'\n\n{amount_sold:,.2f} {Contract(sell_token).symbol()} swapped for'
             msg += f'\n{amount_bought:,.2f} {Contract(buy_token).symbol()}'
+            msg += f'\n\n{dt}'
+            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+            chat_id = CHAT_IDS["WAVEY_ALERTS"]
+            if alerts_enabled:
+                chat_id = CHAT_IDS["YCRV"]
+            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
+    logs = list(pool.AddLiquidity.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        block = l.block_number
+        txn_hash = l.transaction_hash
+        log_time = chain.blocks[block].timestamp
+        amounts = args['token_amounts']
+        ycrv_amount = amounts[1]/1e18
+        crv_amount = amounts[0]/1e18
+        if ycrv_amount + crv_amount > 350_000:
+            current_time = chain.blocks.head.timestamp
+            dt = datetime.utcfromtimestamp(log_time).strftime("%m/%d/%Y, %H:%M:%S")
+            emoji = f"{'📈' if crv_amount > ycrv_amount else '📉'}"
+            msg = f'{emoji} *New yCRV LP Add Detected!*'
+            msg += f'\n\n{crv_amount:,.2f} CRV'
+            msg += f'\n{ycrv_amount:,.2f} yCRV'
+            msg += f'\n\n{dt}'
+            msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
+            chat_id = CHAT_IDS["WAVEY_ALERTS"]
+            if alerts_enabled:
+                chat_id = CHAT_IDS["YCRV"]
+            bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
+    logs = list(pool.RemoveLiquidity.range(start, current_block))
+    for l in logs:
+        args = l.dict()['event_arguments']
+        block = l.block_number
+        txn_hash = l.transaction_hash
+        log_time = chain.blocks[block].timestamp
+        amounts = args['token_amounts']
+        ycrv_amount = amounts[1]/1e18
+        crv_amount = amounts[0]/1e18
+        if ycrv_amount + crv_amount > 350_000:
+            current_time = chain.blocks.head.timestamp
+            dt = datetime.utcfromtimestamp(log_time).strftime("%m/%d/%Y, %H:%M:%S")
+            emoji = f"{'📈' if ycrv_amount > crv_amount else '📉'}"
+            msg = f'{emoji} *New yCRV LP Removed Detected!*'
+            msg += f'\n\n{crv_amount:,.2f} CRV'
+            msg += f'\n{ycrv_amount:,.2f} yCRV'
             msg += f'\n\n{dt}'
             msg += f'\n\n🔗 [View on Etherscan](https://etherscan.io/tx/{txn_hash})'
             chat_id = CHAT_IDS["WAVEY_ALERTS"]
