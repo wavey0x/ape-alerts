@@ -53,11 +53,12 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-    alert_veyfi_locks(last_block, current_block)
-    alert_fee_distributor(last_block, current_block)
-    alert_bribes(last_block, current_block)
-    alert_ycrv(last_block, current_block)
-    alert_ycrv_swap(last_block, current_block)
+    # alert_veyfi_locks(last_block, current_block)
+    # alert_fee_distributor(last_block, current_block)
+    # alert_bribes(last_block, current_block)
+    # alert_ycrv(last_block, current_block)
+    # alert_ycrv_swap(last_block, current_block)
+    usdt_blacklist(last_block, current_block)
     # alert_seasolver(last_block, current_block)
     # find_reverts(address_list, last_block, current_block)
 
@@ -380,6 +381,32 @@ def alert_seasolver(last_block, current_block):
         trades = enumerate_trades(block, txn_hash)
         slippage = calculate_slippage(trades, block)
         format_solver_alert(solver, txn_hash, block, trades, slippage)
+
+def usdt_blacklist(last_block, current_block):
+    start = last_block
+    usdt = Contract('0xdAC17F958D2ee523a2206206994597C13D831ec7')
+    destroyed_funds = list(usdt.DestroyedBlackFunds.range(start, current_block))
+    adds = list(usdt.AddedBlackList.range(start, current_block))
+    removals = list(usdt.RemovedBlackList.range(start, current_block))
+    logs = adds + removals
+    for l in logs:
+        txn_hash = l.transaction_hash
+        block = l.block_number
+        user = l.dict()['event_arguments']['_user']
+        ts = chain.blocks[block].timestamp
+        txn_receipt = networks.provider.get_receipt(txn_hash)
+        receiver = txn_receipt.transaction.sender # args['receiver'] <--- this method gets 
+        dt = datetime.utcfromtimestamp(ts).strftime("%m/%d/%Y, %H:%M:%S")
+        abbr, link, markdown = abbreviate_address(user)
+        added = True if l.dict()['event_name'] == 'AddedBlackList' else False
+        msg = f'🏴‍☠️ *USDT Blacklist Updated!*\n\n'
+        msg += f'{"Added" if added else "Removed"} User: {markdown}'
+        msg += f'\n\n🔗 [Etherscan](https://etherscan.io/tx/{txn_hash})'
+        chat_id = CHAT_IDS["WAVEY_ALERTS"]
+        if alerts_enabled:
+            chat_id = CHAT_IDS["YCRV"]
+        bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
+
 
 def calculate_slippage(trades, block):
 
