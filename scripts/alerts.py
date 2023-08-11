@@ -403,8 +403,6 @@ def usdt_blacklist(last_block, current_block):
         msg += f'{"Added" if added else "Removed"} User: {markdown}'
         msg += f'\n\n🔗 [Etherscan](https://etherscan.io/tx/{txn_hash})'
         chat_id = CHAT_IDS["WAVEY_ALERTS"]
-        if alerts_enabled:
-            chat_id = CHAT_IDS["YCRV"]
         bot.send_message(chat_id, msg, parse_mode="markdown", disable_web_page_preview = True)
 
 
