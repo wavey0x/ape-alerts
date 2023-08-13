@@ -10,7 +10,7 @@ from ape.types import AddressType, ContractLog
 from ape.utils import ManagerAccessMixin
 from ape_tokens import tokens
 from ape_tokens.managers import ERC20
-from eth_abi.packed import encode_abi_packed
+# from eth_abi.packed import encode_abi_packed
 from eth_utils import keccak, humanize_seconds
 from datetime import datetime, timezone
 from sqlalchemy import desc, asc
