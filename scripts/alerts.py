@@ -53,11 +53,11 @@ def main():
     print(f'Starting from block number {last_block}')
     current_block = chain.blocks.height
     data['last_block'] = current_block
-    # alert_veyfi_locks(last_block, current_block)
-    # alert_fee_distributor(last_block, current_block)
-    # alert_bribes(last_block, current_block)
-    # alert_ycrv(last_block, current_block)
-    # alert_ycrv_swap(last_block, current_block)
+    alert_veyfi_locks(last_block, current_block)
+    alert_fee_distributor(last_block, current_block)
+    alert_bribes(last_block, current_block)
+    alert_ycrv(last_block, current_block)
+    alert_ycrv_swap(last_block, current_block)
     usdt_blacklist(last_block, current_block)
     # alert_seasolver(last_block, current_block)
     # find_reverts(address_list, last_block, current_block)
