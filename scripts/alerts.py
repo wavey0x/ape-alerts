@@ -56,9 +56,10 @@ def main():
     alert_veyfi_locks(last_block, current_block)
     alert_fee_distributor(last_block, current_block)
     alert_bribes(last_block, current_block)
-    alert_ycrv(last_block, current_block)
-    alert_ycrv_swap(last_block, current_block)
-    usdt_blacklist(last_block, current_block)
+    # alert_ycrv(last_block, current_block)
+    # alert_ycrv_swap(last_block, current_block)
+    # usdt_blacklist(last_block, current_block)
+    
     # alert_seasolver(last_block, current_block)
     # find_reverts(address_list, last_block, current_block)
 
@@ -87,7 +88,7 @@ def alert_veyfi_locks(last_block, current_block):
         for s in supply_logs:
             block = s.block_number
             ts = chain.blocks[block].timestamp
-            txn_hash = s.transaction_hash
+            txn_hash = s.transaction_hash.hex()
             txn_receipt = networks.provider.get_receipt(txn_hash)
             idx = 0
             args = s.dict()['event_arguments']
